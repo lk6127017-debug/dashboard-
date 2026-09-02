@@ -1,0 +1,467 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dashboard personnel — Planning, Finances & Objectifs">
+  <title>Dashboard</title>
+  <meta name="theme-color" content="#121218">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◎</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+    }
+  </script>
+</head>
+<body>
+
+<div class="db-wrap">
+
+  <!-- ========== HEADER ========== -->
+  <header class="db-header">
+    <h1 class="db-title">Dashboard</h1>
+    <div class="db-header-right">
+      <div class="db-streak" aria-label="Flamme de progression" id="streak-flame" style="position:relative; display:inline-flex; align-items:center; justify-content:center; width:64px; height:64px; overflow:hidden;">
+        <span style="font-size:36px; line-height:1; position:absolute; z-index:1;">🔥</span>
+        <span id="streak-count" style="position:relative; z-index:2; font-weight:900; font-size:20px; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,0.9); letter-spacing:-1px; font-variant-numeric:tabular-nums;">0</span>
+      </div>
+      <div class="db-accent-picker" role="radiogroup" aria-label="Couleur d'accentuation" style="display:none;">
+        <div class="db-accent-dot active" data-color="#6b8afd" style="background:#6b8afd" role="radio" aria-checked="true" aria-label="Bleu" tabindex="0"></div>
+        <div class="db-accent-dot" data-color="#c084fc" style="background:#c084fc" role="radio" aria-checked="false" aria-label="Violet" tabindex="0"></div>
+        <div class="db-accent-dot" data-color="#3ddc84" style="background:#3ddc84" role="radio" aria-checked="false" aria-label="Vert" tabindex="0"></div>
+        <div class="db-accent-dot" data-color="#f59e0b" style="background:#f59e0b" role="radio" aria-checked="false" aria-label="Orange" tabindex="0"></div>
+        <div class="db-accent-dot" data-color="#f472b6" style="background:#f472b6" role="radio" aria-checked="false" aria-label="Rose" tabindex="0"></div>
+        <div class="db-accent-dot" data-color="#22d3ee" style="background:#22d3ee" role="radio" aria-checked="false" aria-label="Cyan" tabindex="0"></div>
+      </div>
+      <button class="db-focus-btn" id="db-focus-btn" aria-label="Presenter" title="Presenter le bloc horaire actuel">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 9V5a2 2 0 012-2h4M21 9V5a2 2 0 00-2-2h-4M3 15v4a2 2 0 002 2h4M21 15v4a2 2 0 01-2 2h-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Presenter</span>
+      </button>
+
+    </div>
+  </header>
+
+  <!-- ========== TABS ========== -->
+  <nav class="db-tabs" role="tablist" aria-label="Navigation principale">
+    <button class="db-tab active" data-tab="planning" role="tab" aria-selected="true" aria-controls="panel-planning" id="tab-planning">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Planning
+    </button>
+    <button class="db-tab" data-tab="finances" role="tab" aria-selected="false" aria-controls="panel-finances" id="tab-finances">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      Finances
+    </button>
+    <button class="db-tab" data-tab="objectifs" role="tab" aria-selected="false" aria-controls="panel-objectifs" id="tab-objectifs">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="12" cy="12" r="6" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
+      Objectifs
+    </button>
+    <button class="db-tab" data-tab="notes" role="tab" aria-selected="false" aria-controls="panel-notes" id="tab-notes">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2v-7M14 3l6 6M14 3v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      Bloc-notes
+    </button>
+  </nav>
+
+  <!-- ========== PANEL: PLANNING ========== -->
+  <div class="db-panel active" id="panel-planning" role="tabpanel" aria-labelledby="tab-planning">
+    <div class="plan-summary">
+      <span><strong id="plan-remaining">0</strong> tâches restantes</span>
+      <span><strong id="plan-done">0</strong> terminées</span>
+      <span><strong id="plan-total">0</strong> au total</span>
+      <div style="margin-left:auto; display:flex; gap:8px;">
+        <select id="plan-filter-prio" aria-label="Filtrer par priorité" style="padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:var(--glass-bg); color:var(--text-secondary); font-size:12px;">
+          <option value="">Toutes priorités</option>
+          <option value="1">★</option>
+          <option value="2">★★</option>
+          <option value="3">★★★</option>
+        </select>
+        <select id="plan-filter-icon" aria-label="Filtrer par icône" style="padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:var(--glass-bg); color:var(--text-secondary); font-size:12px;">
+          <option value="">Toutes icônes</option>
+          <option value="bath">Bain</option>
+          <option value="sport">Sport</option>
+          <option value="work">Travail</option>
+          <option value="study">Études</option>
+          <option value="sleep">Sommeil</option>
+          <option value="meditate">Méditation</option>
+          <option value="call">Appel</option>
+          <option value="email">Email</option>
+          <option value="meeting">Réunion</option>
+          <option value="shop">Courses</option>
+          <option value="clean">Ménage</option>
+          <option value="cook">Cuisine</option>
+          <option value="music">Musique</option>
+          <option value="game">Jeu</option>
+          <option value="movie">Film</option>
+          <option value="walk">Marche</option>
+          <option value="car">Trajet</option>
+          <option value="doctor">Médecin</option>
+          <option value="pill">Médicament</option>
+          <option value="money">Argent</option>
+          <option value="idea">Idée</option>
+          <option value="star">Important</option>
+        </select>
+      </div>
+    </div>
+    <div class="plan-input-row" id="plan-input-row" style="display:none;">
+      <input type="text" id="plan-new-title" placeholder="Nom de la tâche…" aria-label="Nom de la tâche">
+      <input type="text" id="plan-new-target" placeholder="Durée cible (ex: 25m, 1h)" aria-label="Durée cible du chronomètre">
+      <select id="plan-new-icon" aria-label="Icône" class="plan-icon-select">
+        <option value="">⚪ Aucune</option>
+        <option value="bath">🛁 Bain / Douche</option>
+        <option value="sport">🏃 Sport</option>
+        <option value="food">🍽️ Repas</option>
+        <option value="work">💼 Travail</option>
+        <option value="study">📚 Études / Lecture</option>
+        <option value="sleep">😴 Sommeil</option>
+        <option value="meditate">🧘 Méditation</option>
+        <option value="call">📞 Appel</option>
+        <option value="email">✉️ Email</option>
+        <option value="meeting">👥 Réunion</option>
+        <option value="shop">🛒 Courses</option>
+        <option value="clean">🧽 Ménage</option>
+        <option value="cook">🍳 Cuisine</option>
+        <option value="music">🎵 Musique</option>
+        <option value="game">🎮 Jeu</option>
+        <option value="movie">🎬 Film / Série</option>
+        <option value="walk">🚶 Marche</option>
+        <option value="car">🚗 Trajet</option>
+        <option value="doctor">⚕️ Médecin</option>
+        <option value="pill">💊 Médicament</option>
+        <option value="money">💰 Argent</option>
+        <option value="idea">💡 Idée</option>
+        <option value="star">⭐ Important</option>
+      </select>
+      <select id="plan-new-prio" aria-label="Priorité">
+        <option value="1">★</option>
+        <option value="2">★★</option>
+        <option value="3" selected>★★★</option>
+      </select>
+      <select id="plan-new-col" aria-label="Période">
+        <option value="matin">Matin</option>
+        <option value="apres">Après-midi</option>
+        <option value="soir">Soir</option>
+      </select>
+      <button id="plan-save-btn">Ajouter</button>
+    </div>
+    <div class="plan-grid">
+      <div class="plan-col" data-col="matin">
+        <div class="plan-col-title"><span class="dot on"></span>Matin</div>
+        <div id="col-matin" role="list" aria-label="Tâches du matin"></div>
+        <button class="plan-add" data-show-col="matin">
+          <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Ajouter
+        </button>
+      </div>
+      <div class="plan-col" data-col="apres">
+        <div class="plan-col-title"><span class="dot on"></span>Après-midi</div>
+        <div id="col-apres" role="list" aria-label="Tâches de l'après-midi"></div>
+        <button class="plan-add" data-show-col="apres">
+          <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Ajouter
+        </button>
+      </div>
+      <div class="plan-col" data-col="soir">
+        <div class="plan-col-title"><span class="dot"></span>Soir</div>
+        <div id="col-soir" role="list" aria-label="Tâches du soir"></div>
+        <button class="plan-add" data-show-col="soir">
+          <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Ajouter
+        </button>
+      </div>
+    </div>
+    <button class="plan-add" id="plan-add-btn" style="margin-top:12px;">
+      <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Nouvelle tâche
+    </button>
+    <button class="plan-add" id="plan-resume-btn" style="margin-top:8px; background:rgba(var(--accent-rgb),0.06);">
+      <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M5 3l14 9-14 9V3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Reprendre une tâche précédente
+    </button>
+  </div>
+
+  <!-- ========== PANEL: FINANCES ========== -->
+  <div class="db-panel" id="panel-finances" role="tabpanel" aria-labelledby="tab-finances">
+    <div class="fin-header">
+      <div class="fin-card">
+        <div class="fin-card-label">Budget total</div>
+        <div class="fin-card-value" id="fin-total">—</div>
+        <div class="fin-card-sub">prévu ce mois</div>
+      </div>
+      <div class="fin-card">
+        <div class="fin-card-label">Dépenses réelles</div>
+        <div class="fin-card-value" id="fin-spent">—</div>
+        <div class="fin-card-sub">vs budget prévu</div>
+      </div>
+      <div class="fin-card">
+        <div class="fin-card-label">Épargne</div>
+        <div class="fin-card-value" id="fin-save">—</div>
+        <div class="fin-card-sub">mis de côté</div>
+      </div>
+    </div>
+
+    <!-- Charts overview (chart + donut side by side on desktop) -->
+    <div class="fin-overview">
+    <!-- Line chart -->
+    <div class="fin-chart-wrap">
+      <div class="fin-chart-title">Évolution des dépenses (6 derniers mois)</div>
+      <svg id="fin-chart" width="100%" height="160" viewBox="0 0 600 160" preserveAspectRatio="none" style="overflow:visible;">
+        <defs>
+          <linearGradient id="gradFin" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path id="fin-area" d="" fill="url(#gradFin)" stroke="none"/>
+        <path id="fin-line" d="" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <g id="fin-points"></g>
+        <g id="fin-labels"></g>
+      </svg>
+    </div>
+
+    <!-- Donut chart -->
+    <div class="fin-donut-wrap" id="fin-donut"></div>
+    </div>
+
+    <!-- Categories -->
+    <div class="fin-cats" id="fin-cats"></div>
+
+    <!-- Transactions -->
+    <div class="fin-tx-section">
+      <div class="fin-tx-header">
+        <div class="fin-tx-title">Transactions</div>
+        <div class="fin-tx-filters">
+          <select id="tx-filter-cat" aria-label="Filtrer par catégorie"></select>
+          <select id="tx-filter-month" aria-label="Filtrer par mois"></select>
+        </div>
+      </div>
+      <div class="fin-tx-list" id="fin-tx-list" role="list" aria-label="Historique des transactions"></div>
+      <button class="fin-tx-add-btn" id="tx-add-btn">
+        <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Nouvelle transaction
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== PANEL: OBJECTIFS ========== -->
+  <div class="db-panel" id="panel-objectifs" role="tabpanel" aria-labelledby="tab-objectifs">
+
+    <div class="obj-section-head">
+      <div class="obj-section-title">Cette semaine</div>
+      <div class="obj-section-actions">
+        <button class="obj-add-ring" data-sec="week"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Anneau</button>
+        <button class="obj-add-item" data-sec="week"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12h4M18 12h4M12 6v12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Objectif</button>
+      </div>
+    </div>
+    <div class="obj-grid" id="obj-week-grid"></div>
+    <div class="obj-list" id="obj-week-list"></div>
+
+    <div class="obj-section-head">
+      <div class="obj-section-title">Ce mois</div>
+      <div class="obj-section-actions">
+        <button class="obj-add-ring" data-sec="month"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Anneau</button>
+        <button class="obj-add-item" data-sec="month"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12h4M18 12h4M12 6v12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Objectif</button>
+      </div>
+    </div>
+    <div class="obj-grid" id="obj-month-grid"></div>
+    <div class="obj-list" id="obj-month-list"></div>
+
+    <div class="obj-section-head">
+      <div class="obj-section-title">Cette année</div>
+      <div class="obj-section-actions">
+        <button class="obj-add-ring" data-sec="year"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Anneau</button>
+        <button class="obj-add-item" data-sec="year"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12h4M18 12h4M12 6v12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Objectif</button>
+      </div>
+    </div>
+    <div class="obj-grid" id="obj-year-grid"></div>
+    <div class="obj-list" id="obj-year-list"></div>
+
+  </div>
+
+  <!-- ========== PANEL: BLOC-NOTES ========== -->
+  <div class="db-panel" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes">
+    <div class="note-toolbar" id="note-toolbar">
+      <button class="fin-add-btn" id="note-add-btn">
+        <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Nouvelle note
+      </button>
+      <div class="note-count" id="note-count"></div>
+    </div>
+    <input type="text" id="note-search" placeholder="Rechercher dans les notes…" aria-label="Rechercher" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-primary);font-size:14px;margin-bottom:12px;outline:none;backdrop-filter:blur(12px);">
+    <div class="note-grid" id="note-grid" role="list" aria-label="Mes notes"></div>
+
+    <!-- Editor (hidden until a note is opened) -->
+    <div class="note-editor" id="note-editor" style="display:none;">
+      <div class="note-editor-head">
+        <input type="text" id="note-title" placeholder="Titre de la note…" aria-label="Titre">
+        <div class="note-editor-actions">
+          <button class="btn-back" id="note-back-btn" aria-label="Retour"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="btn-save" id="note-save-btn">Enregistrer</button>
+        </div>
+      </div>
+      <textarea id="note-body" placeholder="Tapez vos pensées ici…" aria-label="Contenu de la note"></textarea>
+      <div class="note-history">
+        <div class="note-history-head">
+          <span>Historique</span>
+          <span class="note-history-count" id="note-history-count">0 version</span>
+        </div>
+        <div class="note-history-list" id="note-history-list"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== MODAL: OBJECTIF ========== -->
+<div class="modal-overlay" id="obj-modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="obj-modal-title">
+    <div class="modal-title" id="obj-modal-title">Objectif</div>
+
+    <div class="modal-field obj-type-field">
+      <label>Type</label>
+      <div class="obj-type-tabs">
+        <button type="button" class="obj-type-tab active" data-otype="ring">Anneau de progression</button>
+        <button type="button" class="obj-type-tab" data-otype="list">Jalon</button>
+      </div>
+    </div>
+
+    <!-- Fields for ring type -->
+    <div class="obj-fields" data-fields="ring">
+      <div class="modal-field">
+        <label for="obj-label">Titre</label>
+        <input type="text" id="obj-label" placeholder="Ex: Lecture">
+      </div>
+      <div class="modal-field">
+        <label for="obj-pct">Progression (%)</label>
+        <input type="number" id="obj-pct" min="0" max="100" placeholder="70">
+      </div>
+      <div class="modal-field">
+        <label for="obj-sub">Sous-titre (détail)</label>
+        <input type="text" id="obj-sub" placeholder="Ex: 180 / 200 min">
+      </div>
+    </div>
+
+    <!-- Fields for list type -->
+    <div class="obj-fields" data-fields="list" style="display:none;">
+      <div class="modal-field">
+        <label for="obj-name">Nom</label>
+        <input type="text" id="obj-name" placeholder="Ex: Lancer le site web">
+      </div>
+      <div class="modal-field">
+        <label for="obj-val">Statut / valeur</label>
+        <input type="text" id="obj-val" placeholder="Ex: En cours, 2/3…">
+      </div>
+    </div>
+
+    <div class="modal-field">
+      <label for="obj-color">Couleur</label>
+      <select id="obj-color">
+        <option value="#6b8afd">Bleu</option>
+        <option value="#c084fc">Violet</option>
+        <option value="#3ddc84">Vert</option>
+        <option value="#f59e0b">Orange</option>
+        <option value="#f472b6">Rose</option>
+        <option value="#22d3ee">Cyan</option>
+        <option value="#ff6b6b">Rouge</option>
+        <option value="#f5c542">Jaune</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-delete" id="obj-modal-delete" style="display:none;">Supprimer</button>
+      <button class="btn-cancel" id="obj-modal-close">Annuler</button>
+      <button class="btn-save" id="obj-modal-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: TRANSACTION ========== -->
+<div class="modal-overlay" id="tx-modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tx-modal-title">
+    <div class="modal-title" id="tx-modal-title">Nouvelle transaction</div>
+    <div class="modal-field">
+      <label for="tx-date">Date</label>
+      <input type="date" id="tx-date">
+    </div>
+    <div class="modal-field">
+      <label for="tx-desc">Description</label>
+      <input type="text" id="tx-desc" placeholder="Ex: Courses marché">
+    </div>
+    <div class="modal-field">
+      <label for="tx-cat">Catégorie</label>
+      <select id="tx-cat">
+        <option>Logement</option>
+        <option>Nourriture</option>
+        <option>Transport</option>
+        <option>Loisirs</option>
+        <option>Épargne</option>
+        <option>Revenu</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label for="tx-amount">Montant (XOF, négatif = dépense)</label>
+      <input type="number" id="tx-amount" placeholder="-25000">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-delete" id="tx-modal-delete" style="display:none;">Supprimer</button>
+      <button class="btn-cancel" id="tx-modal-close">Annuler</button>
+      <button class="btn-save" id="tx-modal-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: TIMER PICKER ========== -->
+<div class="modal-overlay" id="timer-overlay">
+  <div class="modal timer-picker-modal" role="dialog" aria-modal="true" aria-labelledby="timer-picker-title">
+    <div class="modal-title" id="timer-picker-title">Durée du chronomètre</div>
+
+    <div class="timer-presets" id="timer-presets">
+      <button class="timer-preset" data-secs="60">1 min</button>
+      <button class="timer-preset" data-secs="180">3 min</button>
+      <button class="timer-preset" data-secs="300">5 min</button>
+      <button class="timer-preset" data-secs="600">10 min</button>
+      <button class="timer-preset" data-secs="900">15 min</button>
+      <button class="timer-preset" data-secs="1500">25 min</button>
+      <button class="timer-preset" data-secs="1800">30 min</button>
+      <button class="timer-preset" data-secs="2700">45 min</button>
+      <button class="timer-preset" data-secs="3600">1 h</button>
+      <button class="timer-preset" data-secs="5400">1 h 30</button>
+      <button class="timer-preset" data-secs="7200">2 h</button>
+    </div>
+
+    <div class="timer-custom">
+      <div class="modal-field">
+        <label>Personnalisé</label>
+        <div class="timer-custom-row">
+          <div class="timer-unit">
+            <input type="number" id="timer-h" min="0" max="23" placeholder="0" inputmode="numeric">
+            <span>h</span>
+          </div>
+          <div class="timer-unit">
+            <input type="number" id="timer-m" min="0" max="59" placeholder="0" inputmode="numeric">
+            <span>min</span>
+          </div>
+          <div class="timer-unit">
+            <input type="number" id="timer-s" min="0" max="59" placeholder="0" inputmode="numeric">
+            <span>s</span>
+          </div>
+        </div>
+        <input type="text" id="timer-text" class="timer-text-input" placeholder="ou tapez : 25m, 1h30, 1:30…">
+      </div>
+    </div>
+
+    <div class="timer-preview" id="timer-preview">0:00</div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" id="timer-no-target">Sans limite</button>
+      <button class="btn-cancel" id="timer-cancel">Annuler</button>
+      <button class="btn-save" id="timer-save">Valider</button>
+    </div>
+  </div>
+</div>
+
+<div class="focus-overlay" id="focus-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="focus-title"><div class="focus-bg" aria-hidden="true"></div><div class="focus-card" id="focus-card"><div class="focus-head"><div class="focus-meta"><div class="focus-eyebrow" id="focus-eyebrow">-</div><h2 class="focus-title" id="focus-title">-</h2><div class="focus-time" id="focus-time">-</div></div><button class="focus-close" id="focus-close" aria-label="Fermer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div><div class="focus-tasks" id="focus-tasks"></div><div class="focus-foot"><span class="focus-hint">Echap pour fermer</span><span class="focus-progress" id="focus-progress"></span></div></div></div>
+
+<script src="app.js"></script>
+</body>
+</html>
