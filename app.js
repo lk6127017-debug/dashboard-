@@ -9,62 +9,17 @@
      DEFAULT STATE
      ---------------------------------------- */
   const DEFAULT_STATE = {
-    tasks: [
-      { id: 't1', title: 'Réunion équipe', col: 'matin', prio: 3, done: false, target: 0, elapsed: 0, running: false, startedAt: 0, alerted: false },
-      { id: 't2', title: 'Lecture 30 min', col: 'matin', prio: 2, done: true, target: 1800, elapsed: 1800, running: false, startedAt: 0, alerted: false },
-      { id: 't3', title: 'Sport – course', col: 'matin', prio: 3, done: false, target: 0, elapsed: 0, running: false, startedAt: 0, alerted: false },
-      { id: 't4', title: 'Projet perso – design', col: 'apres', prio: 3, done: false, target: 0, elapsed: 0, running: false, startedAt: 0, alerted: false },
-      { id: 't5', title: 'Appel client', col: 'apres', prio: 2, done: true, target: 0, elapsed: 0, running: false, startedAt: 0, alerted: false },
-      { id: 't6', title: 'Révisions', col: 'apres', prio: 1, done: false, target: 0, elapsed: 0, running: false, startedAt: 0, alerted: false },
-      { id: 't7', title: 'Cuisine & repas', col: 'soir', prio: 1, done: false, target: 0, elapsed: 0, running: false, startedAt: 0, alerted: false },
-      { id: 't8', title: 'Méditation', col: 'soir', prio: 2, done: true, target: 0, elapsed: 0, running: false, startedAt: 0, alerted: false },
-      { id: 't9', title: 'Séries / détente', col: 'soir', prio: 1, done: false, target: 0, elapsed: 0, running: false, startedAt: 0, alerted: false },
-      { id: 't10', title: 'Planifier demain', col: 'soir', prio: 2, done: false, target: 0, elapsed: 0, running: false, startedAt: 0, alerted: false }
-    ],
+    tasks: [],
     finances: {
-      categories: [
-        { name: 'Logement', spent: 180000, budget: 200000, color: '#6b8afd' },
-        { name: 'Nourriture', spent: 95000, budget: 120000, color: '#3ddc84' },
-        { name: 'Transport', spent: 45000, budget: 60000, color: '#c084fc' },
-        { name: 'Loisirs', spent: 87500, budget: 80000, color: '#ff6b6b' },
-        { name: 'Épargne', spent: 80000, budget: 100000, color: '#8b8b9e' }
-      ],
-      transactions: [
-        { id: 'fx1', date: '2026-09-01', desc: 'Loyer septembre', cat: 'Logement', amount: -180000 },
-        { id: 'fx2', date: '2026-09-02', desc: 'Courses marché', cat: 'Nourriture', amount: -23000 },
-        { id: 'fx3', date: '2026-09-03', desc: 'Essence voiture', cat: 'Transport', amount: -15000 },
-        { id: 'fx4', date: '2026-09-04', desc: 'Netflix', cat: 'Loisirs', amount: -6500 },
-        { id: 'fx5', date: '2026-09-05', desc: 'Virement épargne', cat: 'Épargne', amount: -80000 },
-        { id: 'fx6', date: '2026-09-06', desc: 'Freelance – client A', cat: 'Revenu', amount: 350000 }
-      ],
-      chartMonths: ['Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept'],
-      chartValues: [420, 455, 390, 510, 503, 488]
+      categories: [],
+      transactions: [],
+      chartMonths: [],
+      chartValues: []
     },
     objectives: {
-      week: [
-        { id: 'ow1', type: 'ring', label: 'Tâches complétées', pct: 70, sub: '14 / 20 tâches', color: null },
-        { id: 'ow2', type: 'ring', label: 'Sport & santé', pct: 40, sub: '2 / 5 séances', color: '#3ddc84' },
-        { id: 'ow3', type: 'ring', label: 'Lecture', pct: 90, sub: '180 / 200 min', color: '#f5c542' },
-        { id: 'owl1', type: 'list', name: 'Réviser le business plan', val: 'En cours', color: '#6b8afd' },
-        { id: 'owl2', type: 'list', name: 'Envoyer 3 propositions', val: '2/3', color: '#6b8afd' },
-        { id: 'owl3', type: 'list', name: "Nettoyer l'espace de travail", val: 'Fait', color: '#3ddc84' }
-      ],
-      month: [
-        { id: 'om1', type: 'ring', label: 'Épargne mensuelle', pct: 60, sub: '180 000 / 300 000 XOF', color: '#3ddc84' },
-        { id: 'om2', type: 'ring', label: 'Projets personnels', pct: 30, sub: '1 / 3 jalons', color: '#c084fc' },
-        { id: 'om3', type: 'ring', label: 'Réseau & relations', pct: 100, sub: '4 / 4 rencontres', color: '#ff6b6b' },
-        { id: 'oml1', type: 'list', name: 'Lancer le site web', val: 'Design OK', color: '#6b8afd' },
-        { id: 'oml2', type: 'list', name: 'Atteindre 10K followers', val: '7.2K', color: '#f5c542' },
-        { id: 'oml3', type: 'list', name: 'Certification Google Analytics', val: 'Module 2/4', color: '#6b8afd' }
-      ],
-      year: [
-        { id: 'oy1', type: 'ring', label: "Fonds d'urgence", pct: 70, sub: '1 400 000 / 2 000 000 XOF', color: null },
-        { id: 'oy2', type: 'ring', label: 'Investissement Bourse', pct: 30, sub: '450 000 / 1 500 000 XOF', color: '#c084fc' },
-        { id: 'oy3', type: 'ring', label: 'Formation & compétences', pct: 50, sub: '3 / 6 certifications', color: '#f5c542' },
-        { id: 'oyl1', type: 'list', name: 'Devenir freelance à temps plein', val: '40% transition', color: '#6b8afd' },
-        { id: 'oyl2', type: 'list', name: 'Acheter un terrain', val: 'Étude en cours', color: '#f5c542' },
-        { id: 'oyl3', type: 'list', name: 'Apprendre une 3ème langue', val: 'Début espagnol', color: '#3ddc84' }
-      ]
+      week: [],
+      month: [],
+      year: []
     },
     settings: {
       accent: '#6b8afd',
@@ -74,9 +29,7 @@
       lastDay: new Date().getDate(),
       historiqueTaches: []
     },
-    notes: [
-      { id: 'n1', title: 'Bienvenue', body: 'Ceci est votre bloc-notes personnel. Cliquez sur "Nouvelle note" pour écrire vos pensées, idées ou rappels. Tout est sauvegardé automatiquement.', updated: Date.now(), history: [] }
-    ]
+    notes: []
   };
 
   /* ----------------------------------------
