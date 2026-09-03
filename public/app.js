@@ -27,6 +27,8 @@
       tab: 'planning',
       streak: 0,
       lastDay: new Date().getDate(),
+      streakDoneToday: false,
+      streakVioletDays: 3,
       historiqueTaches: []
     },
     notes: []
@@ -116,6 +118,8 @@
       } else {
         state.settings.streak = Math.max(0, (state.settings.streak || 0) - 1);
       }
+      // Nouveau jour : réautoriser le +1 de la journée
+      state.settings.streakDoneToday = allDonePrevDay ? true : false;
       // Sauvegarder les tâches non terminées dans l'historique
       const nonDone = state.tasks.filter(t => !t.done);
       nonDone.forEach(t => {
@@ -135,27 +139,40 @@
 
   function renderStreak() {
     const el = document.getElementById('streak-count');
-    if (el) el.textContent = (state.settings.streak || 0);
+    const streak = state.settings.streak || 0;
+    if (el) el.textContent = streak;
+    const flameEl = document.getElementById('streak-flame');
+    if (flameEl) {
+      const violetDays = (state.settings && state.settings.streakVioletDays) || 3;
+      flameEl.classList.toggle('level-3', streak >= violetDays);
+      flameEl.dataset.streak = streak;
+    }
+  }
+
+  function showFlameBurst() {
+    const streakEl = document.getElementById('streak-flame');
+    if (streakEl) {
+      streakEl.classList.add('flame-active');
+      const dismissedAt = Date.now();
+      streakEl.dataset.flameAt = dismissedAt;
+    }
   }
 
   function updateStreak() {
     const prevStreak = state.settings.streak || 0;
-    const allDone = state.tasks.length > 0 ? state.tasks.every(t => t.done) : false;
-    if (allDone) {
+    const hasTasks = state.tasks.length > 0;
+    const allDone = hasTasks ? state.tasks.every(t => t.done) : false;
+
+    if (allDone && !state.settings.streakDoneToday) {
+      // +1 UNE seule fois par jour, seulement quand TOUTES les tâches sont terminées
       state.settings.streak = prevStreak + 1;
-    } else {
-      if (state.tasks.length > 0 && !state.tasks.some(t => t.done)) {
-        state.settings.streak = Math.max(0, prevStreak - 1);
-      }
-    }
-    const newStreak = state.settings.streak || 0;
-    renderStreak();
-    saveState();
-    if (newStreak > prevStreak) {
-      const streakEl = document.getElementById('streak-flame');
-      if (streakEl) {
-        streakEl.classList.add('flame-active');
-      }
+      state.settings.streakDoneToday = true;
+      renderStreak();
+      saveState();
+      showFlameBurst();
+    } else if (hasTasks && !allDone) {
+      // Des tâches restent non terminées : on ne compte pas aujourd'hui
+      state.settings.streakDoneToday = false;
     }
   }
 
@@ -436,28 +453,122 @@
     document.querySelectorAll('.task-row.drag-over').forEach(el => el.classList.remove('drag-over'));
   }
 
+  let lastTaskCol = 'matin';
+  let lastPrio = 3;
+  let lastDuration = '';
+  let lastIcon = '';
+
   function showAdd(col) {
     const row = document.getElementById('plan-input-row');
+    if (!row) return;
     row.style.display = 'flex';
-    document.getElementById('plan-new-col').value = col;
+    lastTaskCol = col;
     document.getElementById('plan-new-title').value = '';
     document.getElementById('plan-new-title').focus();
   }
 
+  function hideAdd() {
+    const row = document.getElementById('plan-input-row');
+    if (row) { row.style.display = 'none'; document.getElementById('plan-new-title').value = ''; }
+  }
+
+  function setSelectedIcon(val) {
+    const sel = document.getElementById('task-modal-icon');
+    if (sel) sel.value = val;
+    document.querySelectorAll('#task-modal-icon-picker .plan-icon-opt').forEach(b =>
+      b.classList.toggle('active', b.dataset.icon === val)
+    );
+  }
+
+  function initIconPicker() {
+    const grid = document.getElementById('task-modal-icon-picker');
+    const sel = document.getElementById('task-modal-icon');
+    if (!grid || !sel) return;
+    grid.innerHTML = '';
+    Array.from(sel.options).forEach(opt => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'plan-icon-opt';
+      btn.dataset.icon = opt.value;
+      btn.textContent = opt.label || '✕';
+      btn.title = opt.label || 'Aucune icône';
+      btn.addEventListener('click', () => setSelectedIcon(opt.value));
+      grid.appendChild(btn);
+    });
+  }
+
+  function pushTask(title, col, prio, duration, icon) {
+    const target = parseDuration(duration) || 0;
+    state.tasks.push({ id: 't' + Date.now(), title, col, prio, done: false, icon: icon || '', target: target, elapsed: 0, running: false, startedAt: 0, alerted: false });
+  }
+
   function addTask() {
     const title = document.getElementById('plan-new-title').value.trim();
-    const prio = +document.getElementById('plan-new-prio').value;
-    const col = document.getElementById('plan-new-col').value;
-    const targetStr = document.getElementById('plan-new-target').value.trim();
-    const icon = document.getElementById('plan-new-icon').value;
     if (!title) return;
-    const target = parseDuration(targetStr) || 0;
-    state.tasks.push({ id: 't' + Date.now(), title, col, prio, done: false, icon: icon || '', target: target, elapsed: 0, running: false, startedAt: 0, alerted: false });
-    document.getElementById('plan-new-title').value = '';
-    document.getElementById('plan-new-target').value = '';
-    document.getElementById('plan-new-icon').value = '';
-    document.getElementById('plan-input-row').style.display = 'none';
+    pushTask(title, lastTaskCol, lastPrio, lastDuration, lastIcon);
+    hideAdd();
     renderTasks(); saveState();
+  }
+
+  function openTaskModal() {
+    const m = document.getElementById('task-modal-overlay');
+    if (!m) return;
+    document.getElementById('task-modal-title-input').value = '';
+    document.getElementById('task-modal-col').value = lastTaskCol;
+    document.getElementById('task-modal-prio').value = String(lastPrio);
+    document.getElementById('task-modal-target').value = lastDuration;
+    setSelectedIcon(lastIcon);
+    m.classList.add('show');
+    document.getElementById('task-modal-title-input').focus();
+  }
+
+  function closeTaskModal() {
+    const m = document.getElementById('task-modal-overlay');
+    if (m) m.classList.remove('show');
+  }
+
+  function saveTaskModal() {
+    const title = document.getElementById('task-modal-title-input').value.trim();
+    if (!title) return;
+    const col = document.getElementById('task-modal-col').value;
+    const prio = +document.getElementById('task-modal-prio').value;
+    const target = document.getElementById('task-modal-target').value.trim();
+    const icon = document.getElementById('task-modal-icon').value;
+    lastTaskCol = col; lastPrio = prio; lastDuration = target; lastIcon = icon;
+    pushTask(title, col, prio, target, icon);
+    closeTaskModal();
+    renderTasks(); saveState();
+  }
+
+  /* ----------------------------------------
+     PARAMÈTRES
+     ---------------------------------------- */
+  function openSettings() {
+    const m = document.getElementById('settings-modal-overlay');
+    if (!m) return;
+    const violetInput = document.getElementById('settings-streak-violet');
+    if (violetInput) violetInput.value = (state.settings && state.settings.streakVioletDays) || 3;
+    m.classList.add('show');
+  }
+
+  function closeSettings() {
+    const m = document.getElementById('settings-modal-overlay');
+    if (m) m.classList.remove('show');
+  }
+
+  function saveStreakViolet() {
+    const violetInput = document.getElementById('settings-streak-violet');
+    const v = Math.max(1, Math.min(30, parseInt(violetInput && violetInput.value, 10) || 3));
+    state.settings.streakVioletDays = v;
+    if (violetInput) violetInput.value = v;
+    saveState();
+    renderStreak();
+  }
+
+  function resetAllData() {
+    if (!confirm('Réinitialiser toutes les données (tâches, finances, objectifs, notes) ? Cette action est irréversible.')) return;
+    try { localStorage.removeItem('dashboard'); } catch (e) {}
+    location.reload();
   }
 
   /* ----------------------------------------
@@ -1534,27 +1645,6 @@
   }
 
   /* ----------------------------------------
-     SWIPE (mobile)
-     ---------------------------------------- */
-  let touchStartX = 0;
-  let touchStartY = 0;
-  const TAB_ORDER = ['planning', 'finances', 'objectifs', 'notes'];
-
-  function onTouchStart(e) {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-  }
-
-  function onTouchEnd(e) {
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    const dy = e.changedTouches[0].clientY - touchStartY;
-    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
-    const idx = TAB_ORDER.indexOf(state.settings.tab);
-    if (dx < 0 && idx < TAB_ORDER.length - 1) switchTab(TAB_ORDER[idx + 1]);
-    else if (dx > 0 && idx > 0) switchTab(TAB_ORDER[idx - 1]);
-  }
-
-  /* ----------------------------------------
      UTILITIES
      ---------------------------------------- */
   function escHtml(s) {
@@ -1641,7 +1731,7 @@
 
     // Tabs
     try {
-      document.querySelectorAll('.db-tab').forEach(tab => {
+      document.querySelectorAll('.db-tab[data-tab]').forEach(tab => {
         tab.addEventListener('click', () => switchTab(tab.dataset.tab));
       });
     } catch (e) { console.error('tabs', e); }
@@ -1702,40 +1792,6 @@
       if (!document.getElementById('note-save-btn')) console.error('note-save-btn manquant');
     } catch (e) { console.error('notes bindings', e); }
 
-    function resumeTaskFromHistory() {
-    const historique = state.settings.historiqueTaches || [];
-    if (historique.length === 0) {
-      alert('Aucune tâche précédente dans l\'historique.');
-      return;
-    }
-    const list = historique.map((t, i) => (i + 1) + '. ' + (t.title || 'Sans titre') + ' (' + (t.col || 'inconnu') + ')').join('\n');
-    const ans = prompt('Choisissez le numéro de la tâche à reprendre :\n\n' + list + '\n\n(0 pour annuler)');
-    if (ans === null || ans.trim() === '' || ans.trim() === '0') return;
-    const n = parseInt(ans.trim(), 10);
-    if (isNaN(n) || n < 1 || n > historique.length) return;
-    const t = historique[n - 1];
-    // Restaurer la tâche dans le planning actuel
-    state.tasks.push({
-      id: 't' + Date.now() + '-' + Math.random().toString(36).slice(2, 5),
-      title: t.title || '',
-      col: t.col || 'matin',
-      prio: t.prio || 3,
-      done: false,
-      icon: t.icon || '',
-      target: 0,
-      elapsed: 0,
-      running: false,
-      startedAt: 0,
-      alerted: false
-    });
-    renderTasks();
-    saveState();
-  }
-
-      // Planning resume button
-      const resumeBtn = document.getElementById('plan-resume-btn');
-      if (resumeBtn) resumeBtn.addEventListener('click', resumeTaskFromHistory);
-
       // Planning filters
     try {
       document.getElementById('plan-filter-prio').addEventListener('change', renderTasks);
@@ -1756,25 +1812,41 @@
       if (monthFilter) monthFilter.addEventListener('change', renderTransactions);
 
       // Add task / Add tx buttons
-      document.getElementById('plan-add-btn').addEventListener('click', () => {
-        document.getElementById('plan-input-row').style.display = 'flex';
-        document.getElementById('plan-new-title').focus();
-      });
+      document.getElementById('plan-add-btn').addEventListener('click', openTaskModal);
       document.getElementById('plan-save-btn').addEventListener('click', addTask);
+      document.getElementById('plan-cancel-btn').addEventListener('click', hideAdd);
       document.getElementById('plan-new-title').addEventListener('keydown', e => {
-        if (e.key === 'Enter') addTask();
+        if (e.key === 'Enter') { e.preventDefault(); addTask(); }
+        else if (e.key === 'Escape') hideAdd();
+      });
+      initIconPicker();
+      document.getElementById('task-modal-close').addEventListener('click', closeTaskModal);
+      document.getElementById('task-modal-save').addEventListener('click', saveTaskModal);
+      document.getElementById('task-modal-title-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); saveTaskModal(); }
+        else if (e.key === 'Escape') closeTaskModal();
+      });
+      document.getElementById('task-modal-overlay').addEventListener('click', e => {
+        if (e.target === e.currentTarget) closeTaskModal();
+      });
+      // Settings modal
+      document.getElementById('tab-settings').addEventListener('click', openSettings);
+      document.getElementById('settings-modal-close').addEventListener('click', closeSettings);
+      document.getElementById('settings-streak-violet').addEventListener('change', saveStreakViolet);
+      document.getElementById('settings-streak-violet').addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); saveStreakViolet(); closeSettings(); }
+        else if (e.key === 'Escape') closeSettings();
+      });
+      document.getElementById('settings-reset').addEventListener('click', resetAllData);
+      document.getElementById('settings-modal-overlay').addEventListener('click', e => {
+        if (e.target === e.currentTarget) closeSettings();
       });
       document.getElementById('tx-add-btn').addEventListener('click', () => openTxModal());
     } catch (e) { console.error('filters/add bindings', e); }
 
-    // Swipe
-    try {
-      document.addEventListener('touchstart', onTouchStart, { passive: true });
-      document.addEventListener('touchend', onTouchEnd, { passive: true });
-    } catch (e) { console.error('swipe bindings', e); }
-
     // Keyboard: arrow keys for tabs
     try {
+      const TAB_ORDER = ['planning', 'finances', 'objectifs', 'notes'];
       document.addEventListener('keydown', e => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
         const idx = TAB_ORDER.indexOf(state.settings.tab);
@@ -1808,11 +1880,20 @@
   window.addEventListener('error', e => showFatalBanner(e.message || 'inconnue'));
   window.addEventListener('unhandledrejection', e => showFatalBanner((e.reason && e.reason.message) || 'promesse rejetée'));
 
-  // Click anywhere removes flame center animation
+  // Click anywhere removes flame center animation (only after it has been visible long enough)
   document.addEventListener('click', (e) => {
     const flame = document.getElementById('streak-flame');
-    if (flame && flame.classList.contains('flame-active')) {
-      flame.classList.remove('flame-active');
+    if (flame && flame.classList.contains('flame-active') && !flame.classList.contains('flame-closing')) {
+      const shownAt = parseInt(flame.dataset.flameAt || 0, 10);
+      if (!shownAt || Date.now() - shownAt > 1600) {
+        flame.classList.add('flame-closing');
+        clearTimeout(flame._closeTimer);
+        flame._closeTimer = setTimeout(() => {
+          flame.classList.remove('flame-active');
+          flame.classList.remove('flame-closing');
+          flame.dataset.flameAt = '';
+        }, 820);
+      }
     }
   });
 
